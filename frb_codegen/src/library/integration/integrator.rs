@@ -15,6 +15,7 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
 pub struct IntegrateConfig {
+    pub enable_overlay_lib: bool,
     pub enable_integration_test: bool,
     pub enable_dart_fix: bool,
     pub enable_dart_format: bool,
@@ -38,27 +39,56 @@ pub fn integrate(config: IntegrateConfig) -> Result<()> {
 
     info!("Overlay template onto project");
     let replacements = compute_replacements(&config, &dart_package_name, &rust_crate_name);
-    execute_overlay_dir(
-        &TemplateDirs::SHARED,
-        &replacements,
-        &dart_root,
-        &config,
-        None,
-    )?;
-    let (dir, comment_out_files) = match &config.template {
-        Template::App => (&TemplateDirs::APP, vec!["main.dart".to_string()]),
-        Template::Plugin => (
+    match config.template {
+        Template::App => execute_overlay_dir(
+            &TemplateDirs::APP,
+            &replacements,
+            &dart_root,
+            &config,
+            None,
+        )?,
+        Template::Plugin => execute_overlay_dir(
             &TemplateDirs::PLUGIN,
-            vec![format!("{dart_package_name}.dart")],
-        ),
-    };
-    execute_overlay_dir(
-        dir,
-        &replacements,
-        &dart_root,
-        &config,
-        Some(&comment_out_files),
-    )?;
+            &replacements,
+            &dart_root,
+            &config,
+            None,
+        )?,
+    }
+    if config.enable_overlay_lib {
+        execute_overlay_dir(
+            &TemplateDirs::SHARED_LIB,
+            &replacements,
+            &dart_root,
+            &config,
+            None,
+        )?;
+        match config.template {
+            Template::App => execute_overlay_dir(
+                &TemplateDirs::APP_LIB,
+                &replacements,
+                &dart_root,
+                &config,
+                Some(&vec!["main.dart".to_string()]),
+            )?,
+            Template::Plugin => execute_overlay_dir(
+                &TemplateDirs::PLUGIN_LIB,
+                &replacements,
+                &dart_root,
+                &config,
+                Some(&vec![format!("{dart_package_name}.dart")]),
+            )?,
+        }
+    }
+    if config.enable_integration_test && config.template == Template::App {
+        execute_overlay_dir(
+            &TemplateDirs::APP_TEST,
+            &replacements,
+            &dart_root,
+            &config,
+            None,
+        )?;
+    }
 
     if config.enable_local_dependency && config.template == Template::Plugin {
         add_publish_to_none(&dart_root)?;
@@ -369,9 +399,15 @@ fn add_publish_to_none(dart_root: &Path) -> Result<()> {
 struct TemplateDirs;
 
 impl TemplateDirs {
-    const SHARED: Dir<'static> =
-        include_dir!("$CARGO_MANIFEST_DIR/assets/integration_template/shared");
+    const SHARED_LIB: Dir<'static> =
+        include_dir!("$CARGO_MANIFEST_DIR/assets/integration_template/shared_lib");
     const APP: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/assets/integration_template/app");
+    const APP_LIB: Dir<'static> =
+        include_dir!("$CARGO_MANIFEST_DIR/assets/integration_template/app_lib");
+    const APP_TEST: Dir<'static> =
+        include_dir!("$CARGO_MANIFEST_DIR/assets/integration_template/app_test");
     const PLUGIN: Dir<'static> =
         include_dir!("$CARGO_MANIFEST_DIR/assets/integration_template/plugin");
+    const PLUGIN_LIB: Dir<'static> =
+        include_dir!("$CARGO_MANIFEST_DIR/assets/integration_template/plugin_lib");
 }

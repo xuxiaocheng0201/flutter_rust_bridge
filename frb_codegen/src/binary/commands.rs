@@ -221,6 +221,10 @@ pub(crate) struct CreateCommandArgs {
 
 #[derive(Debug, Args)]
 pub(crate) struct IntegrateCommandArgs {
+    /// Generate code related to lib/example etc.
+    #[arg(long)]
+    pub(crate) no_enable_overlay_lib: bool,
+
     /// Generate code related to integration test
     #[arg(long)]
     pub(crate) no_enable_integration_test: bool,
