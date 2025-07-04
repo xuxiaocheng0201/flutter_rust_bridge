@@ -40,13 +40,9 @@ pub fn integrate(config: IntegrateConfig) -> Result<()> {
     info!("Overlay template onto project");
     let replacements = compute_replacements(&config, &dart_package_name, &rust_crate_name);
     match config.template {
-        Template::App => execute_overlay_dir(
-            &TemplateDirs::APP,
-            &replacements,
-            &dart_root,
-            &config,
-            None,
-        )?,
+        Template::App => {
+            execute_overlay_dir(&TemplateDirs::APP, &replacements, &dart_root, &config, None)?
+        }
         Template::Plugin => execute_overlay_dir(
             &TemplateDirs::PLUGIN,
             &replacements,
