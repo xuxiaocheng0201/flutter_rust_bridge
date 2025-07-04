@@ -65,14 +65,14 @@ pub fn integrate(config: IntegrateConfig) -> Result<()> {
                 &replacements,
                 &dart_root,
                 &config,
-                Some(&vec!["main.dart".to_string()]),
+                Some(&["main.dart".to_string()]),
             )?,
             Template::Plugin => execute_overlay_dir(
                 &TemplateDirs::PLUGIN_LIB,
                 &replacements,
                 &dart_root,
                 &config,
-                Some(&vec![format!("{dart_package_name}.dart")]),
+                Some(&[format!("{dart_package_name}.dart")]),
             )?,
         }
     }
